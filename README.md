@@ -1,7 +1,7 @@
-# 🏨 Caciorgna Hotel
+# 🏨 Caciorgna Hotels
 
 Gestionale prenotazioni per tre strutture dello stesso proprietario, in **un'unica pagina
-scorrevole** ottimizzata per smartphone (in particolare iPhone).
+scorrevole** ottimizzata per smartphone (in particolare iPhone) e desktop.
 
 - **Hotel Il Faro** — 17 camere (11–27): 12 doppie + 5 triple (la 27 anche quadrupla)
 - **Palazzo Caciorgna** — 5 camere: 2 doppie + 3 triple
@@ -39,3 +39,21 @@ streamlit run app.py
 | Villa del Cavaliere | 50 € | 70 € | 80 € | — |
 
 La deroga prezzo nel form sovrascrive la tariffa standard per la singola prenotazione.
+
+## 📱 Icona app (rosso / giallo)
+Nella cartella `assets/` trovi l'icona del brand pronta da salvare sullo smartphone:
+- `caciorgna-icon-rounded-1024.png` — versione con angoli arrotondati (sembra un'app)
+- `caciorgna-icon-1024.png` — versione quadrata piena (iOS/Android applicano la loro maschera)
+- `apple-touch-icon-180.png`, `icon-512.png`, `icon-192.png` — formati per browser/PWA
+
+**Aggiungere alla schermata Home dello smartphone**
+- *iPhone (Safari):* apri l'app web → tasto **Condividi** → **Aggiungi a Home**. Per usare
+  l'icona del brand come immagine dell'icona, salva prima `caciorgna-icon-rounded-1024.png`
+  nelle Foto e impostala come immagine quando richiesto, oppure pubblica gli asset insieme
+  all'app (vedi nota PWA sotto).
+- *Android (Chrome):* menu **⋮** → **Aggiungi a schermata Home** / **Installa app**.
+
+`assets/manifest.json` è già pronto: collegandolo nell'`<head>` (tramite un piccolo wrapper
+HTML o un reverse proxy) lo smartphone userà automaticamente l'icona rossa come icona dell'app.
+L'icona compare anche nella scheda del browser perché è impostata come `page_icon`.
+

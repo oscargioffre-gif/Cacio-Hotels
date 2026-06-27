@@ -18,6 +18,10 @@ from calendar import monthrange
 import pandas as pd
 import streamlit as st
 
+# Percorso dell'icona usata come favicon/scheda browser (se presente).
+ICON_PATH = os.path.join("assets", "icon-192.png")
+_page_icon = ICON_PATH if os.path.exists(ICON_PATH) else "🏨"
+
 # =============================================================================
 # 1. CONFIGURAZIONE PAGINA
 # =============================================================================
@@ -25,8 +29,8 @@ import streamlit as st
 # "centered" è la scelta migliore per il mobile: limita la larghezza dei
 # contenuti rendendoli pieni-schermo su iPhone ed eleganti su desktop.
 st.set_page_config(
-    page_title="Caciorgna Hotel",
-    page_icon="🏨",
+    page_title="Caciorgna Hotels",
+    page_icon=_page_icon,
     layout="centered",
     initial_sidebar_state="collapsed",
 )
@@ -103,113 +107,125 @@ MESI_IT = [
 # 3. STILE (CSS) — identità visiva e ottimizzazione mobile
 # =============================================================================
 def inietta_css():
-    """Inietta il foglio di stile globale (font, palette, griglia, card)."""
-    st.markdown(
-        """
-        <style>
-        /* --- Tipografia: display serif + sans pulito (Google Fonts) --- */
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
+    """Inietta il foglio di stile globale (font, palette, griglia, card).
 
-        :root{
-            --marine:   #0F2A3A;   /* blu marino profondo  */
-            --marine-2: #163b50;
-            --ottone:   #C7A24A;   /* ottone / oro         */
-            --avorio:   #FBF8F3;   /* fondo avorio caldo   */
-            --inchiostro:#1B2B34;  /* testo scuro          */
-            --libera:   #2E8B6B;   /* verde salvia (libera)*/
-            --occupata: #C8553D;   /* terracotta (occupata)*/
-        }
+    Lo stile è 'mobile-first': dimensioni compatte di default e una media query
+    che amplia spazi e font su schermi larghi (desktop/laptop).
+    """
+    css = """
+<style>
+/* --- Tipografia: display serif + sans pulito (Google Fonts) --- */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
 
-        /* Sfondo generale e font del corpo */
-        [data-testid="stAppViewContainer"]{
-            background: var(--avorio);
-        }
-        html, body, [data-testid="stAppViewContainer"] *{
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            color: var(--inchiostro);
-        }
-        /* Margini ridotti in alto per guadagnare spazio su mobile */
-        .block-container{ padding-top: 1.2rem; padding-bottom: 3rem; }
+:root{
+  --marine:#0F2A3A; --marine-2:#163b50; --ottone:#C7A24A;
+  --avorio:#FBF8F3; --inchiostro:#1B2B34;
+  --libera:#2E8B6B; --occupata:#C8553D;
+}
 
-        /* --- Testata --- */
-        .app-header{
-            background: linear-gradient(135deg, var(--marine) 0%, var(--marine-2) 100%);
-            border-radius: 18px;
-            padding: 22px 20px;
-            margin-bottom: 18px;
-            box-shadow: 0 8px 24px rgba(15,42,58,.18);
-            border: 1px solid rgba(199,162,74,.25);
-        }
-        .app-header h1{
-            font-family: 'Fraunces', serif !important;
-            color: #fff !important;
-            font-size: 30px; font-weight: 700; margin: 0; letter-spacing: .3px;
-        }
-        .app-header .pedice{
-            color: var(--ottone); font-size: 13px; font-weight: 600;
-            text-transform: uppercase; letter-spacing: 2px; margin-top: 4px;
-        }
+/* Sfondo e font del corpo (senza forzare il colore su TUTTO per evitare effetti collaterali) */
+[data-testid="stAppViewContainer"]{ background:var(--avorio); }
+[data-testid="stAppViewContainer"], [data-testid="stAppViewContainer"] p,
+[data-testid="stAppViewContainer"] label, [data-testid="stAppViewContainer"] span,
+[data-testid="stAppViewContainer"] li{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+}
+.block-container{ padding-top:1.4rem; padding-bottom:3rem; max-width:820px; }
 
-        /* --- Card KPI incassi --- */
-        .kpi-grid{ display:flex; flex-wrap:wrap; gap:10px; margin: 4px 0 18px; }
-        .kpi-card{
-            flex: 1 1 140px;
-            background:#fff; border:1px solid #ece5d8; border-left:5px solid var(--ottone);
-            border-radius:14px; padding:12px 14px; box-shadow:0 2px 8px rgba(27,43,52,.05);
-        }
-        .kpi-card .etichetta{ font-size:11px; text-transform:uppercase; letter-spacing:1px;
-            color:#7b746a; font-weight:600; }
-        .kpi-card .valore{ font-family:'Fraunces',serif; font-size:26px; font-weight:700;
-            color:var(--marine); margin-top:2px; }
+/* --- Testata --- */
+.app-header{
+  background:linear-gradient(135deg,var(--marine) 0%,var(--marine-2) 100%);
+  border-radius:18px; padding:20px 22px; margin:0 0 20px;
+  box-shadow:0 8px 24px rgba(15,42,58,.18); border:1px solid rgba(199,162,74,.25);
+}
+.app-header h1{
+  font-family:'Fraunces',serif; color:#fff; font-size:28px; font-weight:700;
+  margin:0; line-height:1.18; letter-spacing:.3px;
+}
+.app-header .pedice{
+  color:var(--ottone); font-size:12px; font-weight:600; text-transform:uppercase;
+  letter-spacing:1.8px; margin-top:8px; line-height:1.4;
+}
 
-        /* --- Titolo struttura --- */
-        .hotel-titolo{
-            font-family:'Fraunces',serif; font-size:21px; font-weight:600;
-            color:var(--marine); margin:22px 0 6px; padding-bottom:6px;
-            border-bottom:2px solid var(--ottone);
-        }
-        .hotel-meta{ font-size:12.5px; color:#7b746a; margin:-2px 0 10px; }
+/* --- Card KPI incassi: griglia 2 colonne su mobile, 4 su desktop --- */
+.kpi-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin:2px 0 18px; }
+.kpi-card{
+  background:#fff; border:1px solid #ece5d8; border-left:5px solid var(--ottone);
+  border-radius:14px; padding:13px 15px; box-shadow:0 2px 8px rgba(27,43,52,.05);
+}
+.kpi-card .etichetta{
+  font-size:11px; text-transform:uppercase; letter-spacing:1px;
+  color:#7b746a; font-weight:600; line-height:1.3; margin:0;
+}
+.kpi-card .valore{
+  font-family:'Fraunces',serif; font-size:25px; font-weight:700;
+  color:var(--marine); line-height:1.2; margin:4px 0 0; white-space:nowrap;
+}
 
-        /* --- Griglia settimanale --- */
-        .grid-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch;
-            border-radius:14px; border:1px solid #ece5d8; background:#fff;
-            box-shadow:0 2px 8px rgba(27,43,52,.05); margin-bottom:6px; }
-        table.week-grid{ border-collapse:separate; border-spacing:4px; padding:6px;
-            width:100%; min-width:520px; }
-        table.week-grid th{
-            font-size:11px; font-weight:600; color:#5b5750; text-align:center;
-            padding:4px 2px; line-height:1.15; white-space:nowrap;
-        }
-        table.week-grid td.room-col, table.week-grid th.room-col{
-            text-align:left; white-space:nowrap; position:sticky; left:0;
-            background:#fff; z-index:2; padding-left:6px;
-        }
-        table.week-grid td.room-col{
-            font-size:12px; font-weight:600; color:var(--marine);
-            border-right:1px solid #eee;
-        }
-        table.week-grid td.room-col small{ display:block; color:#9a948a; font-weight:500; font-size:10px; }
-        /* Celle stato camera */
-        .cell{ border-radius:9px; text-align:center; font-size:10.5px; font-weight:600;
-            padding:8px 4px; min-width:58px; color:#fff; line-height:1.1; }
-        .cell.free{ background:var(--libera); }
-        .cell.occ{ background:var(--occupata); }
-        .cell .nome{ display:block; font-weight:700; font-size:10.5px;
-            white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:62px; }
-        .cell .uso{ display:block; font-size:9px; opacity:.9; font-weight:500; }
+/* --- Titolo struttura --- */
+.hotel-titolo{
+  font-family:'Fraunces',serif; font-size:21px; font-weight:600; color:var(--marine);
+  margin:24px 0 4px; padding-bottom:7px; border-bottom:2px solid var(--ottone); line-height:1.25;
+}
+.hotel-meta{ font-size:12.5px; color:#7b746a; margin:0 0 12px; line-height:1.4; }
 
-        /* Riepilogo libere/occupate sotto la griglia */
-        .occ-sum{ font-size:12px; color:#5b5750; margin:4px 2px 2px; }
-        .occ-sum b.lib{ color:var(--libera); } .occ-sum b.occ{ color:var(--occupata); }
+/* --- Griglia settimanale (layout flex, allineamento perfetto) --- */
+.grid-wrap{
+  overflow-x:auto; -webkit-overflow-scrolling:touch; border-radius:14px;
+  border:1px solid #ece5d8; background:#fff; box-shadow:0 2px 8px rgba(27,43,52,.05);
+  margin-bottom:8px;
+}
+.grid-inner{ display:flex; flex-direction:column; gap:6px; padding:10px; min-width:560px; }
+.grow{ display:flex; gap:6px; align-items:stretch; }
+/* Colonna camera (a sinistra, resta visibile durante lo scroll orizzontale) */
+.rc, .rch{ flex:0 0 84px; position:sticky; left:0; z-index:3; background:#fff; }
+.rch{ font-size:11px; font-weight:600; color:#5b5750; display:flex; align-items:flex-end; padding:0 0 4px 4px; }
+.rc{
+  font-size:12.5px; font-weight:700; color:var(--marine); line-height:1.15;
+  display:flex; flex-direction:column; justify-content:center; padding-left:4px;
+  border-right:1px solid #eee;
+}
+.rc small{ color:#9a948a; font-weight:500; font-size:10px; line-height:1.2; }
+/* Intestazioni giorni */
+.dh{
+  flex:1 1 0; min-width:56px; text-align:center; font-size:11px; font-weight:600;
+  color:#5b5750; line-height:1.2; padding-bottom:2px;
+}
+.dh b{ font-weight:700; color:var(--inchiostro); }
+/* Celle giorno */
+.dc{ flex:1 1 0; min-width:56px; display:flex; }
+.cell{
+  flex:1; border-radius:9px; text-align:center; color:#fff; font-weight:600;
+  padding:7px 4px; line-height:1.15; display:flex; flex-direction:column;
+  justify-content:center; min-height:38px;
+}
+.cell.free{ background:var(--libera); font-size:10.5px; }
+.cell.occ{ background:var(--occupata); }
+.cell .nome{
+  font-weight:700; font-size:10.5px; white-space:nowrap; overflow:hidden;
+  text-overflow:ellipsis; max-width:100%;
+}
+.cell .uso{ font-size:9px; opacity:.92; font-weight:500; margin-top:1px; }
 
-        /* Bottoni Streamlit in tinta */
-        .stButton>button{ border-radius:10px; font-weight:600; }
-        div[data-testid="stForm"]{ border:1px solid #ece5d8; border-radius:14px;
-            background:#fff; padding:6px 14px 4px; }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
+/* Riepilogo libere/occupate */
+.occ-sum{ font-size:12.5px; color:#5b5750; margin:2px 2px 6px; line-height:1.4; }
+.occ-sum b.lib{ color:var(--libera); } .occ-sum b.occ{ color:var(--occupata); }
+
+/* Bottoni e form in tinta */
+.stButton>button{ border-radius:10px; font-weight:600; }
+div[data-testid="stForm"]{ border:1px solid #ece5d8; border-radius:14px; background:#fff; }
+
+/* --- Desktop / laptop: più respiro e font leggermente maggiori --- */
+@media (min-width:680px){
+  .kpi-grid{ grid-template-columns:repeat(4,1fr); }
+  .app-header h1{ font-size:32px; }
+  .kpi-card .valore{ font-size:27px; }
+  .grid-inner{ min-width:0; }            /* su desktop entra tutto, niente scroll */
+  .dh, .dc{ min-width:64px; }
+}
+</style>
+"""
+    st.markdown(css, unsafe_allow_html=True)
 
 
 # =============================================================================
@@ -319,37 +335,38 @@ def abbrevia(nome, n=9):
 
 
 def griglia_hotel_html(hotel, settimana):
-    """Genera la tabella HTML (verde=libera / rosso=occupata) per una struttura."""
-    rooms = HOTELS[hotel]["rooms"]
+    """Genera la griglia HTML (verde=libera / rosso=occupata) per una struttura.
 
-    # Intestazione con i 7 giorni.
-    html = '<div class="grid-wrap"><table class="week-grid"><tr>'
-    html += '<th class="room-col">Camera</th>'
+    Layout a flex: ogni riga ha la stessa struttura (label camera + 7 celle giorno),
+    quindi le colonne risultano sempre allineate. L'HTML è prodotto su riga singola
+    per evitare che Streamlit/Markdown lo interpreti come blocco di codice.
+    """
+    rooms = HOTELS[hotel]["rooms"]
+    parti = ['<div class="grid-wrap"><div class="grid-inner">']
+
+    # Riga di intestazione (angolo + 7 giorni).
+    parti.append('<div class="grow"><div class="rch">Camera</div>')
     for d in settimana:
-        html += f'<th>{GIORNI_IT[d.weekday()]}<br>{d.strftime("%d/%m")}</th>'
-    html += "</tr>"
+        parti.append(f'<div class="dh">{GIORNI_IT[d.weekday()]}<br><b>{d.strftime("%d/%m")}</b></div>')
+    parti.append("</div>")
 
     # Una riga per camera.
     for camera, tipo in rooms.items():
-        html += (
-            f'<tr><td class="room-col">N. {camera}'
-            f'<small>{TIPO_LABEL[tipo]}</small></td>'
-        )
+        parti.append(f'<div class="grow"><div class="rc">N. {camera}<small>{TIPO_LABEL[tipo]}</small></div>')
         for d in settimana:
             p = camera_occupata_il(hotel, camera, d)
             if p:
                 nome = abbrevia(p["intestatario"])
-                html += (
-                    f'<td><div class="cell occ" title="{p["intestatario"]} — {p["uso"]}">'
-                    f'<span class="nome">{nome}</span>'
-                    f'<span class="uso">{p["uso"]}</span></div></td>'
+                parti.append(
+                    f'<div class="dc"><div class="cell occ" title="{p["intestatario"]} — {p["uso"]}">'
+                    f'<span class="nome">{nome}</span><span class="uso">{p["uso"]}</span></div></div>'
                 )
             else:
-                html += '<td><div class="cell free">libera</div></td>'
-        html += "</tr>"
+                parti.append('<div class="dc"><div class="cell free">libera</div></div>')
+        parti.append("</div>")
 
-    html += "</table></div>"
-    return html
+    parti.append("</div></div>")
+    return "".join(parti)
 
 
 # =============================================================================
@@ -365,12 +382,10 @@ def init_stato():
 # =============================================================================
 def sezione_testata():
     st.markdown(
-        """
-        <div class="app-header">
-            <h1>🏨 Caciorgna Hotel</h1>
-            <div class="pedice">Gestione · Il Faro · Palazzo Caciorgna · Villa del Cavaliere</div>
-        </div>
-        """,
+        '<div class="app-header">'
+        '<h1>🏨 Caciorgna Hotels</h1>'
+        '<div class="pedice">Il Faro · Palazzo Caciorgna · Villa del Cavaliere</div>'
+        '</div>',
         unsafe_allow_html=True,
     )
 
@@ -394,26 +409,12 @@ def sezione_kpi(giorno):
     inc_anno = incasso_intervallo(primo_anno, fine_anno)
 
     st.markdown(
-        f"""
-        <div class="kpi-grid">
-            <div class="kpi-card">
-                <div class="etichetta">Incasso giorno</div>
-                <div class="valore">{euro(inc_giorno)}</div>
-            </div>
-            <div class="kpi-card">
-                <div class="etichetta">Settimana</div>
-                <div class="valore">{euro(inc_sett)}</div>
-            </div>
-            <div class="kpi-card">
-                <div class="etichetta">{MESI_IT[giorno.month - 1]}</div>
-                <div class="valore">{euro(inc_mese)}</div>
-            </div>
-            <div class="kpi-card">
-                <div class="etichetta">Anno {giorno.year}</div>
-                <div class="valore">{euro(inc_anno)}</div>
-            </div>
-        </div>
-        """,
+        '<div class="kpi-grid">'
+        f'<div class="kpi-card"><p class="etichetta">Incasso giorno</p><p class="valore">{euro(inc_giorno)}</p></div>'
+        f'<div class="kpi-card"><p class="etichetta">Settimana</p><p class="valore">{euro(inc_sett)}</p></div>'
+        f'<div class="kpi-card"><p class="etichetta">{MESI_IT[giorno.month - 1]}</p><p class="valore">{euro(inc_mese)}</p></div>'
+        f'<div class="kpi-card"><p class="etichetta">Anno {giorno.year}</p><p class="valore">{euro(inc_anno)}</p></div>'
+        '</div>',
         unsafe_allow_html=True,
     )
 
@@ -534,8 +535,7 @@ def sezione_griglie(giorno):
 
         st.markdown(
             f'<div class="hotel-titolo">{conf["icona"]} {hotel}</div>'
-            f'<div class="hotel-meta">{len(rooms)} camere · '
-            f'{n_doppie} doppie · {n_triple} triple</div>',
+            f'<div class="hotel-meta">{len(rooms)} camere · {n_doppie} doppie · {n_triple} triple</div>',
             unsafe_allow_html=True,
         )
         st.markdown(griglia_hotel_html(hotel, settimana), unsafe_allow_html=True)
@@ -547,8 +547,7 @@ def sezione_griglie(giorno):
         libere = len(rooms) - occupate
         st.markdown(
             f'<div class="occ-sum">Il {giorno.strftime("%d/%m")}: '
-            f'<b class="lib">{libere} libere</b> · '
-            f'<b class="occ">{occupate} occupate</b></div>',
+            f'<b class="lib">{libere} libere</b> · <b class="occ">{occupate} occupate</b></div>',
             unsafe_allow_html=True,
         )
 
