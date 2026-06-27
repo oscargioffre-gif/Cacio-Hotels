@@ -1,0 +1,11 @@
+# Tema in tinta con l'identità "ospitalità italiana" (marine + ottone + avorio)
+[theme]
+base = "light"
+primaryColor = "#C7A24A"
+backgroundColor = "#FBF8F3"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#1B2B34"
+font = "sans serif"
+
+[server]
+headless = true
