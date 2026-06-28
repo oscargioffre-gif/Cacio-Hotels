@@ -8,11 +8,12 @@ scorrevole** ottimizzata per smartphone (in particolare iPhone) e desktop.
 - **Villa del Cavaliere** — 6 camere: 5 doppie + 1 tripla
 
 ## Funzioni
-- Vista **settimanale** a griglia (lun–dom) con riquadri **verde = libera** / **rosso = occupata**
-- Selettore data/settimana a inizio pagina (dal 2026 in poi)
+- Vista **settimanale** a griglia (lun–dom) con riquadri **verde = libera** / **rosso = occupata**, con **effetto 3D al tocco**
+- **Tocca una cella verde** per inserire una prenotazione (precompilata su camera e giorno), **una rossa** per modificarla al volo
+- Navigatore settimana intuitivo: **calendario + frecce ◀ ▶ + tasto Oggi**
 - Form prenotazione: intestatario (privato o ditta), telefono, email, tipo di uso, **deroga prezzo a ±1 €**
 - **KPI incassi** in tempo reale: giorno · settimana · mese · anno
-- **Storico & statistiche** (collassabile): incasso per anno, andamento mensile e **confronto fra due mesi** (es. Maggio vs Aprile, anche fra anni diversi)
+- **Storico & statistiche** (collassabile): incasso per anno, andamento mensile e **confronto fra due mesi**
 - Elenco prenotazioni con **Modifica** ed **Elimina**
 - **Backup / ripristino** CSV per non perdere mai lo storico
 - Salvataggio persistente su `data/prenotazioni.csv`

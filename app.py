@@ -12,6 +12,7 @@ Deploy:        compatibile con Streamlit Community Cloud (vedi note sul CSV).
 
 import os
 import uuid
+import urllib.parse
 import datetime as dt
 from calendar import monthrange
 
@@ -152,17 +153,26 @@ div[data-testid="stForm"] label, .stCheckbox label, .stRadio label{
 
 /* --- Testata --- */
 .app-header{
-  background:linear-gradient(135deg,var(--marine) 0%,var(--marine-2) 100%);
-  border-radius:18px; padding:20px 22px; margin:0 0 20px;
-  box-shadow:0 8px 24px rgba(15,42,58,.18); border:1px solid rgba(199,162,74,.25);
+  background:linear-gradient(160deg,#0b2030 0%,var(--marine) 45%,var(--marine-2) 100%);
+  border-radius:20px; padding:34px 24px 28px; margin:0 0 22px; text-align:center;
+  box-shadow:0 12px 32px rgba(15,42,58,.24); border:1px solid rgba(199,162,74,.4);
 }
 .app-header h1{
-  font-family:'Fraunces',serif; color:#fff; font-size:28px; font-weight:700;
-  margin:0; line-height:1.18; letter-spacing:.3px;
+  font-family:'Fraunces',serif; color:#fff; font-size:44px; font-weight:700;
+  margin:0; line-height:1.08; letter-spacing:.4px;
+}
+.app-header h1 .acc{ color:var(--ottone); }
+.app-header .rule{
+  width:66px; height:3px; background:var(--ottone); border-radius:3px; margin:14px auto 12px;
 }
 .app-header .pedice{
-  color:var(--ottone); font-size:12px; font-weight:600; text-transform:uppercase;
-  letter-spacing:1.8px; margin-top:8px; line-height:1.4;
+  color:#e8d9b0; font-size:13px; font-weight:600; text-transform:uppercase;
+  letter-spacing:2.6px; line-height:1.5; margin:0;
+}
+@media (max-width:560px){
+  .app-header{ padding:26px 18px 22px; }
+  .app-header h1{ font-size:33px; }
+  .app-header .pedice{ font-size:10.5px; letter-spacing:1.6px; }
 }
 
 /* --- Card KPI incassi: griglia 2 colonne su mobile, 4 su desktop --- */
@@ -210,15 +220,23 @@ div[data-testid="stForm"] label, .stCheckbox label, .stRadio label{
   color:#5b5750; line-height:1.2; padding-bottom:2px;
 }
 .dh b{ font-weight:700; color:var(--inchiostro); }
-/* Celle giorno */
+/* Celle giorno: ora sono link cliccabili con effetto 3D al tocco/click */
 .dc{ flex:1 1 0; min-width:56px; display:flex; }
 .cell{
-  flex:1; border-radius:9px; text-align:center; color:#fff; font-weight:600;
-  padding:7px 4px; line-height:1.15; display:flex; flex-direction:column;
-  justify-content:center; min-height:38px;
+  flex:1; border-radius:10px; text-align:center; color:#fff !important; font-weight:600;
+  padding:8px 4px; line-height:1.15; display:flex; flex-direction:column;
+  justify-content:center; min-height:44px; cursor:pointer; text-decoration:none !important;
+  user-select:none; -webkit-tap-highlight-color:transparent;
+  box-shadow:0 3px 0 rgba(0,0,0,.30), 0 4px 9px rgba(0,0,0,.14);
+  transition:transform .07s ease, box-shadow .07s ease, filter .12s ease;
 }
-.cell.free{ background:var(--libera); font-size:10.5px; }
-.cell.occ{ background:var(--occupata); }
+.cell.free{ background:linear-gradient(180deg,#37a37c 0%,#2E8B6B 100%); font-size:11px; }
+.cell.occ{ background:linear-gradient(180deg,#d56550 0%,#C8553D 100%); }
+.cell:hover{ filter:brightness(1.07); }
+.cell:active{                                   /* premuto: si abbassa */
+  transform:translateY(3px);
+  box-shadow:0 0 0 rgba(0,0,0,.30), 0 1px 3px rgba(0,0,0,.12);
+}
 .cell .nome{
   font-weight:700; font-size:10.5px; white-space:nowrap; overflow:hidden;
   text-overflow:ellipsis; max-width:100%;
@@ -236,7 +254,6 @@ div[data-testid="stForm"]{ border:1px solid #ece5d8; border-radius:14px; backgro
 /* --- Desktop / laptop: più respiro e font leggermente maggiori --- */
 @media (min-width:680px){
   .kpi-grid{ grid-template-columns:repeat(4,1fr); }
-  .app-header h1{ font-size:32px; }
   .kpi-card .valore{ font-size:27px; }
   .grid-inner{ min-width:0; }            /* su desktop entra tutto, niente scroll */
   .dh, .dc{ min-width:64px; }
@@ -392,18 +409,27 @@ def griglia_hotel_html(hotel, settimana):
     parti.append("</div>")
 
     # Una riga per camera.
+    qh = urllib.parse.quote(hotel)
     for camera, tipo in rooms.items():
         parti.append(f'<div class="grow"><div class="rc">N. {camera}<small>{TIPO_LABEL[tipo]}</small></div>')
         for d in settimana:
             p = camera_occupata_il(hotel, camera, d)
             if p:
+                # Cella ROSSA -> link che apre la MODIFICA di quella prenotazione.
                 nome = abbrevia(p["intestatario"])
+                href = f"?act=edit&id={p['id']}"
                 parti.append(
-                    f'<div class="dc"><div class="cell occ" title="{p["intestatario"]} — {p["uso"]}">'
-                    f'<span class="nome">{nome}</span><span class="uso">{p["uso"]}</span></div></div>'
+                    f'<div class="dc"><a class="cell occ" target="_self" href="{href}" '
+                    f'title="{p["intestatario"]} — {p["uso"]} (tocca per modificare)">'
+                    f'<span class="nome">{nome}</span><span class="uso">{p["uso"]}</span></a></div>'
                 )
             else:
-                parti.append('<div class="dc"><div class="cell free">libera</div></div>')
+                # Cella VERDE -> link che apre l'INSERIMENTO per camera/giorno.
+                href = f"?act=add&h={qh}&r={camera}&d={d.isoformat()}"
+                parti.append(
+                    f'<div class="dc"><a class="cell free" target="_self" href="{href}" '
+                    f'title="Tocca per prenotare la N. {camera} il {d.strftime("%d/%m")}">libera</a></div>'
+                )
         parti.append("</div>")
 
     parti.append("</div></div>")
@@ -424,7 +450,8 @@ def init_stato():
 def sezione_testata():
     st.markdown(
         '<div class="app-header">'
-        '<h1>🏨 Caciorgna Hotels</h1>'
+        '<h1>Caciorgna <span class="acc">Hotels</span></h1>'
+        '<div class="rule"></div>'
         '<div class="pedice">Il Faro · Palazzo Caciorgna · Villa del Cavaliere</div>'
         '</div>',
         unsafe_allow_html=True,
@@ -461,9 +488,18 @@ def sezione_kpi(giorno):
 
 
 def sezione_form_prenotazione(giorno_default):
-    """Form dedicato per inserire una nuova prenotazione."""
-    with st.expander("➕  Aggiungi prenotazione", expanded=False):
+    """Form dedicato per inserire una nuova prenotazione.
 
+    Si apre automaticamente (già precompilato) quando si tocca una cella VERDE
+    nella griglia, oppure manualmente dall'expander.
+    """
+    apri = st.session_state.get("open_add", False)
+    with st.expander("➕  Aggiungi prenotazione", expanded=apri):
+        if apri:
+            st.info(
+                f"Nuova prenotazione per **{st.session_state.get('f_hotel','')} — "
+                f"N. {st.session_state.get('f_camera','')}**. Completa i dati e salva."
+            )
         # --- Selettori e deroga FUORI dal form ---
         # Devono reagire subito al tocco: l'elenco usi, il prezzo standard e la
         # deroga dipendono dalle scelte e dentro un st.form non si aggiornerebbero
@@ -510,15 +546,18 @@ def sezione_form_prenotazione(giorno_default):
             st.caption(f"Tariffa standard a notte: **{euro(prezzo_std)}**")
 
         # --- Dati cliente e date DENTRO il form ---
+        # Le date partono dal giorno cliccato sulla griglia (se presente).
+        ci_default = st.session_state.get("add_ci", giorno_default)
+        co_default = st.session_state.get("add_co", ci_default + dt.timedelta(days=1))
         with st.form("form_prenotazione", clear_on_submit=True):
             c3, c4 = st.columns(2)
             check_in = c3.date_input(
-                "Data check-in", value=giorno_default,
-                min_value=dt.date(2026, 1, 1), format="DD/MM/YYYY", key="f_in",
+                "Data check-in", value=ci_default,
+                min_value=dt.date(2026, 1, 1), format="DD/MM/YYYY",
             )
             check_out = c4.date_input(
-                "Data check-out", value=giorno_default + dt.timedelta(days=1),
-                min_value=dt.date(2026, 1, 1), format="DD/MM/YYYY", key="f_out",
+                "Data check-out", value=co_default,
+                min_value=dt.date(2026, 1, 1), format="DD/MM/YYYY",
             )
 
             tipo_cliente = st.radio(
@@ -572,6 +611,9 @@ def sezione_form_prenotazione(giorno_default):
             }
             st.session_state.prenotazioni.append(nuova)
             salva_prenotazioni()
+            # Chiudo il pannello di aggiunta e pulisco i prefill da click sulla griglia.
+            for k in ("open_add", "add_ci", "add_co"):
+                st.session_state.pop(k, None)
             notti = (check_out - check_in).days
             st.success(
                 f"Prenotazione salvata: {intestatario.strip()} — N. {camera} "
@@ -643,8 +685,7 @@ def _form_modifica(pid):
         st.session_state.e_note = p.get("note", "")
         st.session_state._edit_seed = pid
 
-    st.markdown("---")
-    st.markdown(f"**✏️ Modifica prenotazione di _{p['intestatario']}_**")
+    st.caption(f"Stai modificando la prenotazione di **{p['intestatario']}**.")
 
     c1, c2 = st.columns(2)
     hotel = c1.selectbox("Struttura", list(HOTELS.keys()), key="e_hotel")
@@ -720,6 +761,16 @@ def _form_modifica(pid):
         st.rerun()
 
 
+def sezione_modifica():
+    """Mostra il modulo di modifica in alto (compare cliccando una cella rossa
+    o il tasto Modifica nella gestione)."""
+    if not st.session_state.get("edit_id"):
+        return
+    with st.container(border=True):
+        st.markdown("### ✏️ Modifica prenotazione")
+        _form_modifica(st.session_state.edit_id)
+
+
 def sezione_gestione():
     """Elenco prenotazioni con modifica ed eliminazione."""
     with st.expander("📋  Prenotazioni registrate", expanded=False):
@@ -766,10 +817,8 @@ def sezione_gestione():
             _chiudi_modifica()
             st.success("Prenotazione eliminata.")
             st.rerun()
-
-        # Form di modifica (compare quando si preme "Modifica").
         if st.session_state.get("edit_id"):
-            _form_modifica(st.session_state.edit_id)
+            st.caption("Il modulo di modifica è in alto, sotto gli incassi. ⬆️")
 
 
 def sezione_storico():
@@ -855,28 +904,107 @@ def sezione_backup():
 
 
 # =============================================================================
-# 9. MAIN
+# 9. AZIONI DA CLICK SULLE CELLE E SELETTORE GIORNO/SETTIMANA
+# =============================================================================
+def gestisci_click_celle():
+    """Legge i parametri URL prodotti dal click su una cella della griglia e
+    apre il modulo giusto: VERDE -> inserimento, ROSSO -> modifica."""
+    qp = st.query_params
+    act = qp.get("act")
+    if not act:
+        return
+
+    if act == "add":
+        h = qp.get("h")
+        r = qp.get("r")
+        d = qp.get("d")
+        if h in HOTELS and r is not None:
+            rooms = HOTELS[h]["rooms"]
+            try:
+                r_int = int(r)
+            except (TypeError, ValueError):
+                r_int = None
+            if r_int in rooms:
+                try:
+                    d_obj = dt.date.fromisoformat(d)
+                except (TypeError, ValueError):
+                    d_obj = dt.date.today()
+                _chiudi_modifica()  # eventuale modifica aperta viene chiusa
+                st.session_state["f_hotel"] = h
+                st.session_state["f_camera"] = r_int
+                st.session_state["f_uso"] = USI_PER_TIPO[rooms[r_int]][0]
+                st.session_state["f_deroga"] = False
+                st.session_state["add_ci"] = d_obj
+                st.session_state["add_co"] = d_obj + dt.timedelta(days=1)
+                st.session_state["open_add"] = True
+
+    elif act == "edit":
+        bid = qp.get("id")
+        if bid and any(p["id"] == bid for p in st.session_state.prenotazioni):
+            st.session_state.pop("open_add", None)
+            st.session_state.edit_id = bid
+
+    # Pulisco l'URL così l'azione non si ripete ad ogni rerun successivo.
+    st.query_params.clear()
+
+
+def selettore_giorno():
+    """Selettore giorno/settimana semplice e intuitivo: calendario + frecce
+    settimana precedente/successiva + tasto Oggi. Restituisce il giorno scelto."""
+    oggi = dt.date.today()
+    default = oggi if oggi >= dt.date(2026, 1, 1) else dt.date(2026, 1, 1)
+    if "giorno_sel" not in st.session_state:
+        st.session_state["giorno_sel"] = default
+
+    def _clamp(d):
+        return max(dt.date(2026, 1, 1), d)
+
+    st.markdown("##### 📅 Settimana da visualizzare")
+    cprev, cpick, cnext = st.columns([1, 3, 1])
+
+    # Frecce: spostano di una settimana (gestite PRIMA di creare il calendario).
+    if cprev.button("◀", use_container_width=True, help="Settimana precedente"):
+        st.session_state["giorno_sel"] = _clamp(st.session_state["giorno_sel"] - dt.timedelta(days=7))
+        st.rerun()
+    if cnext.button("▶", use_container_width=True, help="Settimana successiva"):
+        st.session_state["giorno_sel"] = _clamp(st.session_state["giorno_sel"] + dt.timedelta(days=7))
+        st.rerun()
+
+    giorno = cpick.date_input(
+        "Giorno di riferimento", min_value=dt.date(2026, 1, 1),
+        format="DD/MM/YYYY", key="giorno_sel", label_visibility="collapsed",
+    )
+
+    # Tasto "Oggi" (solo se utile, cioè se non siamo già sulla settimana odierna).
+    if oggi >= dt.date(2026, 1, 1) and giorno != oggi:
+        if st.button("📍  Oggi", use_container_width=True):
+            st.session_state["giorno_sel"] = oggi
+            st.rerun()
+
+    lun, dom = giorni_settimana(giorno)[0], giorni_settimana(giorno)[-1]
+    st.caption(f"Settimana: **{lun.strftime('%d/%m/%Y')} – {dom.strftime('%d/%m/%Y')}**")
+    return giorno
+
+
+# =============================================================================
+# 10. MAIN
 # =============================================================================
 def main():
     inietta_css()
     init_stato()
+    gestisci_click_celle()      # interpreta i click sulle celle (verde/rosso)
     sezione_testata()
 
-    # --- Selettore data/settimana (dal 2026 in poi) ---
-    oggi = dt.date.today()
-    default = oggi if oggi >= dt.date(2026, 1, 1) else dt.date(2026, 1, 1)
-    giorno = st.date_input(
-        "Giorno / settimana di riferimento",
-        value=default,
-        min_value=dt.date(2026, 1, 1),
-        format="DD/MM/YYYY",
-        help="La griglia mostra la settimana (lun-dom) che contiene questa data.",
-    )
+    # --- Selettore giorno/settimana (calendario + frecce + Oggi) ---
+    giorno = selettore_giorno()
 
     # --- KPI incassi sempre in vista in cima ---
     sezione_kpi(giorno)
 
-    # --- Form di inserimento prenotazione ---
+    # --- Modulo di modifica (compare in alto cliccando una cella rossa) ---
+    sezione_modifica()
+
+    # --- Form di inserimento prenotazione (si apre cliccando una cella verde) ---
     sezione_form_prenotazione(giorno)
 
     # --- Storico & statistiche (collassato, non appesantisce la pagina) ---
@@ -892,9 +1020,9 @@ def main():
     sezione_backup()
 
     st.caption(
-        "Dati salvati in data/prenotazioni.csv. Su Streamlit Community Cloud il "
-        "filesystem è temporaneo: scarica il backup CSV o collega un repo GitHub / "
-        "database per conservare lo storico (vedi README)."
+        "Suggerimento: tocca una cella **verde** per prenotare o una **rossa** per "
+        "modificare. Dati in data/prenotazioni.csv; su Streamlit Cloud scarica il "
+        "backup CSV per conservare lo storico (vedi README)."
     )
 
 
