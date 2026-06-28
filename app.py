@@ -251,6 +251,22 @@ div[data-testid="stForm"] label, .stCheckbox label, .stRadio label{
 .stButton>button{ border-radius:10px; font-weight:600; }
 div[data-testid="stForm"]{ border:1px solid #ece5d8; border-radius:14px; background:#fff; }
 
+/* --- Tasto HOME fisso, sempre visibile (in basso a destra) --- */
+.home-fab{
+  position:fixed; right:18px; bottom:18px; z-index:99999;
+  background:linear-gradient(180deg,#1c485f 0%,#0F2A3A 100%); color:#fff !important;
+  font-weight:700; font-size:14px; text-decoration:none !important;
+  padding:12px 18px; border-radius:30px; line-height:1;
+  box-shadow:0 6px 18px rgba(15,42,58,.38); border:1.5px solid var(--ottone);
+  display:inline-flex; align-items:center; gap:7px; -webkit-tap-highlight-color:transparent;
+  transition:transform .07s ease, box-shadow .07s ease, filter .12s ease;
+}
+.home-fab:hover{ filter:brightness(1.12); }
+.home-fab:active{ transform:translateY(2px); box-shadow:0 2px 8px rgba(15,42,58,.38); }
+@media (max-width:560px){
+  .home-fab{ right:14px; bottom:14px; padding:11px 15px; font-size:13px; }
+}
+
 /* --- Desktop / laptop: più respiro e font leggermente maggiori --- */
 @media (min-width:680px){
   .kpi-grid{ grid-template-columns:repeat(4,1fr); }
@@ -906,15 +922,35 @@ def sezione_backup():
 # =============================================================================
 # 9. AZIONI DA CLICK SULLE CELLE E SELETTORE GIORNO/SETTIMANA
 # =============================================================================
+def _reset_home():
+    """Riporta l'app allo stato iniziale e RICARICA tutte le info da disco."""
+    # Chiude eventuali moduli aperti (modifica/aggiunta) e pulisce i campi.
+    _chiudi_modifica()
+    for k in [
+        "open_add", "add_ci", "add_co",
+        "f_hotel", "f_camera", "f_uso", "f_deroga",
+        "f_intestatario", "f_tel", "f_email", "f_note", "f_tipo_cliente",
+        "sel_pren",
+    ]:
+        st.session_state.pop(k, None)
+    # Torna alla settimana odierna.
+    st.session_state["giorno_sel"] = max(dt.date(2026, 1, 1), dt.date.today())
+    # Ricarica le prenotazioni dal file (dati sempre aggiornati).
+    st.session_state.prenotazioni = carica_prenotazioni()
+
+
 def gestisci_click_celle():
-    """Legge i parametri URL prodotti dal click su una cella della griglia e
-    apre il modulo giusto: VERDE -> inserimento, ROSSO -> modifica."""
+    """Legge i parametri URL prodotti dal click su una cella della griglia o dal
+    tasto HOME e apre il modulo giusto / esegue il reset."""
     qp = st.query_params
     act = qp.get("act")
     if not act:
         return
 
-    if act == "add":
+    if act == "home":
+        _reset_home()
+
+    elif act == "add":
         h = qp.get("h")
         r = qp.get("r")
         d = qp.get("d")
@@ -1002,7 +1038,13 @@ def selettore_giorno():
 def main():
     inietta_css()
     init_stato()
-    gestisci_click_celle()      # interpreta i click sulle celle (verde/rosso)
+    gestisci_click_celle()      # interpreta i click sulle celle e il tasto HOME
+    # Tasto HOME fisso, sempre visibile: torna all'inizio e ricarica i dati.
+    st.markdown(
+        '<a class="home-fab" target="_self" href="?act=home" '
+        'title="Torna alla pagina iniziale e aggiorna">🏠 Home</a>',
+        unsafe_allow_html=True,
+    )
     sezione_testata()
 
     # --- Selettore giorno/settimana (calendario + frecce + Oggi) ---
