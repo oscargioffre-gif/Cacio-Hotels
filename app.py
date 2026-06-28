@@ -45,13 +45,27 @@ st.set_page_config(
 #   "tripla_quad" -> come la tripla ma usabile anche come quadrupla (camera 27)
 
 # --- Hotel Il Faro: camere 11-27 (17 totali) ---------------------------------
-# 12 doppie (11-22) + 5 triple (23-27), la 27 anche quadrupla.
-_faro_rooms = {}
-for n in range(11, 23):          # 11..22 -> 12 doppie
-    _faro_rooms[n] = "doppia"
-for n in range(23, 27):          # 23..26 -> 4 triple
-    _faro_rooms[n] = "tripla"
-_faro_rooms[27] = "tripla_quad"  # 27 -> tripla usabile anche come quadrupla
+# 12 doppie + 5 triple. Le triple sono le camere 12, 17, 18, 19 e 27;
+# la 27 è una tripla utilizzabile anche come quadrupla.
+_faro_rooms = {
+    11: "doppia",
+    12: "tripla",
+    13: "doppia",
+    14: "doppia",
+    15: "doppia",
+    16: "doppia",
+    17: "tripla",
+    18: "tripla",
+    19: "tripla",
+    20: "doppia",
+    21: "doppia",
+    22: "doppia",
+    23: "doppia",
+    24: "doppia",
+    25: "doppia",
+    26: "doppia",
+    27: "tripla_quad",  # tripla utilizzabile anche come quadrupla
+}
 
 HOTELS = {
     "Hotel Il Faro": {
@@ -68,8 +82,8 @@ HOTELS = {
     },
     "Villa del Cavaliere": {
         "icona": "🏰",
-        # 6 camere: 5 doppie (1-5) + 1 tripla (6)
-        "rooms": {1: "doppia", 2: "doppia", 3: "doppia", 4: "doppia", 5: "doppia", 6: "tripla"},
+        # 6 camere: 5 doppie + 1 tripla (la tripla è la camera 1)
+        "rooms": {1: "tripla", 2: "doppia", 3: "doppia", 4: "doppia", 5: "doppia", 6: "doppia"},
         "prezzi": {"Singola": 50, "Doppia": 70, "Tripla": 80},
     },
 }
