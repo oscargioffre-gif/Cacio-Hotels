@@ -663,17 +663,19 @@ def _form_modifica(pid):
     uso = st.selectbox("Tipo di uso", usi, key="e_uso")
 
     prezzo_std = prezzo_standard(hotel, uso)
-    deroga = st.checkbox("Deroga prezzo standard (modifica manuale a 1 € per tocco)", key="e_deroga")
+    # Prezzo SEMPRE visibile e PRECOMPILATO col valore attuale della prenotazione,
+    # modificabile manualmente a 1 € per tocco (in più o in meno).
+    if "e_prezzo" not in st.session_state:
+        st.session_state["e_prezzo"] = float(p["prezzo_notte"])
+    prezzo_notte = st.number_input(
+        "Prezzo a notte (€) — modificabile a 1 € per tocco",
+        min_value=0.0, step=1.0, format="%.0f", key="e_prezzo",
+    )
+    deroga = abs(float(prezzo_notte) - prezzo_std) > 1e-9
     if deroga:
-        if "e_prezzo" not in st.session_state:
-            st.session_state["e_prezzo"] = float(prezzo_std)
-        prezzo_notte = st.number_input(
-            "Prezzo a notte (€)", min_value=0.0, step=1.0, format="%.0f", key="e_prezzo",
-        )
-        st.caption(f"Standard {euro(prezzo_std)} → applicato **{euro(prezzo_notte)}**")
+        st.caption(f"Tariffa standard {euro(prezzo_std)} → **deroga applicata: {euro(prezzo_notte)}**")
     else:
-        prezzo_notte = prezzo_std
-        st.caption(f"Tariffa standard a notte: **{euro(prezzo_std)}**")
+        st.caption(f"Tariffa standard a notte: {euro(prezzo_std)}")
 
     c3, c4 = st.columns(2)
     check_in = c3.date_input("Data check-in", min_value=dt.date(2026, 1, 1), format="DD/MM/YYYY", key="e_in")
