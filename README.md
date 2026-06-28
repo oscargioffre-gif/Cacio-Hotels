@@ -10,10 +10,12 @@ scorrevole** ottimizzata per smartphone (in particolare iPhone) e desktop.
 ## Funzioni
 - Vista **settimanale** a griglia (lun–dom) con riquadri **verde = libera** / **rosso = occupata**
 - Selettore data/settimana a inizio pagina (dal 2026 in poi)
-- Form prenotazione: intestatario (privato o ditta), telefono, email, tipo di uso, **deroga prezzo**
+- Form prenotazione: intestatario (privato o ditta), telefono, email, tipo di uso, **deroga prezzo a ±1 €**
 - **KPI incassi** in tempo reale: giorno · settimana · mese · anno
+- **Storico & statistiche** (collassabile): incasso per anno, andamento mensile e **confronto fra due mesi** (es. Maggio vs Aprile, anche fra anni diversi)
+- Elenco prenotazioni con **Modifica** ed **Elimina**
+- **Backup / ripristino** CSV per non perdere mai lo storico
 - Salvataggio persistente su `data/prenotazioni.csv`
-- Elenco prenotazioni con eliminazione
 
 ## Avvio locale
 ```bash

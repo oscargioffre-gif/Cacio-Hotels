@@ -123,12 +123,30 @@ def inietta_css():
   --libera:#2E8B6B; --occupata:#C8553D;
 }
 
-/* Sfondo e font del corpo (senza forzare il colore su TUTTO per evitare effetti collaterali) */
-[data-testid="stAppViewContainer"]{ background:var(--avorio); }
-[data-testid="stAppViewContainer"], [data-testid="stAppViewContainer"] p,
-[data-testid="stAppViewContainer"] label, [data-testid="stAppViewContainer"] span,
-[data-testid="stAppViewContainer"] li{
+/* Sfondo, font e COLORE testo imposti sul container: garantiscono leggibilità
+   anche se l'app non carica il tema (niente più testo bianco su bianco). */
+[data-testid="stAppViewContainer"]{
+  background:var(--avorio); color:var(--inchiostro);
   font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+}
+/* IMPORTANTE: non sovrascrivere il font delle icone di Streamlit, altrimenti
+   le frecce degli expander compaiono come testo ("arrow_down"). Le ri-forzo. */
+[data-testid="stIconMaterial"], [data-testid="stExpanderToggleIcon"],
+span.material-icons, span.material-symbols-rounded, span.material-symbols-outlined,
+[class*="material-symbols"], [class*="material-icons"]{
+  font-family:'Material Symbols Rounded','Material Symbols Outlined','Material Icons' !important;
+}
+/* Etichette dei widget e testo digitato: sempre scuri e leggibili */
+[data-testid="stWidgetLabel"] p, [data-testid="stWidgetLabel"] label,
+div[data-testid="stForm"] label, .stCheckbox label, .stRadio label{
+  color:var(--inchiostro) !important; font-weight:600;
+}
+.stDateInput input, .stTextInput input, .stNumberInput input,
+.stTextArea textarea, .stSelectbox div[data-baseweb="select"]{
+  color:var(--inchiostro) !important;
+}
+.stDateInput input, .stTextInput input, .stNumberInput input, .stTextArea textarea{
+  background:#fff !important;
 }
 .block-container{ padding-top:1.4rem; padding-bottom:3rem; max-width:820px; }
 
@@ -325,6 +343,29 @@ def euro(x):
     return f"{x:,.0f} €".replace(",", ".")
 
 
+def incasso_mese(anno, mese):
+    """Incasso totale di un mese specifico."""
+    primo = dt.date(anno, mese, 1)
+    ultimo = monthrange(anno, mese)[1]
+    return incasso_intervallo(primo, primo + dt.timedelta(days=ultimo))
+
+
+def incasso_anno(anno):
+    """Incasso totale di un anno specifico."""
+    return incasso_intervallo(dt.date(anno, 1, 1), dt.date(anno + 1, 1, 1))
+
+
+def anni_con_dati():
+    """Elenco ordinato degli anni (>=2026) presenti nelle prenotazioni + anno corrente."""
+    anni = set()
+    for p in st.session_state.prenotazioni:
+        anni.add(a_data(p["check_in"]).year)
+        anni.add((a_data(p["check_out"]) - dt.timedelta(days=1)).year)
+    oggi = dt.date.today()
+    anni.add(oggi.year if oggi.year >= 2026 else 2026)
+    return sorted(a for a in anni if a >= 2026)
+
+
 # =============================================================================
 # 6. COSTRUZIONE HTML DELLA GRIGLIA SETTIMANALE
 # =============================================================================
@@ -421,10 +462,12 @@ def sezione_kpi(giorno):
 
 def sezione_form_prenotazione(giorno_default):
     """Form dedicato per inserire una nuova prenotazione."""
-    with st.expander("➕  Nuova prenotazione", expanded=False):
+    with st.expander("➕  Aggiungi prenotazione", expanded=False):
 
-        # Selettori fuori dal form: servono a far reagire l'interfaccia
-        # (l'elenco usi e il prezzo standard dipendono da hotel/camera/uso).
+        # --- Selettori e deroga FUORI dal form ---
+        # Devono reagire subito al tocco: l'elenco usi, il prezzo standard e la
+        # deroga dipendono dalle scelte e dentro un st.form non si aggiornerebbero
+        # finché non si invia.
         c1, c2 = st.columns(2)
         hotel = c1.selectbox("Struttura", list(HOTELS.keys()), key="f_hotel")
         rooms = HOTELS[hotel]["rooms"]
@@ -435,21 +478,41 @@ def sezione_form_prenotazione(giorno_default):
             key="f_camera",
         )
         tipo = rooms[camera]
-        usi = USI_PER_TIPO[tipo]
-        uso = st.selectbox("Tipo di uso", usi, key="f_uso")
+        uso = st.selectbox("Tipo di uso", USI_PER_TIPO[tipo], key="f_uso")
 
         prezzo_std = prezzo_standard(hotel, uso)
-        st.caption(f"Tariffa standard a notte: **{euro(prezzo_std)}**")
 
+        # --- Deroga prezzo (±1€ a tocco) ---
+        applica_deroga = st.checkbox(
+            "Deroga prezzo standard (modifica manuale a 1 € per tocco)",
+            key="f_deroga",
+        )
+        if applica_deroga:
+            # La key cambia con hotel/camera/uso: così il campo riparte sempre
+            # dalla tariffa standard corretta quando cambi la selezione.
+            prezzo_notte = st.number_input(
+                "Prezzo a notte (€)",
+                min_value=0.0, step=1.0, format="%.0f",
+                value=float(prezzo_std),
+                key=f"f_prezzo_{hotel}_{camera}_{uso}",
+            )
+            st.caption(
+                f"Standard {euro(prezzo_std)} → applicato **{euro(prezzo_notte)}**"
+            )
+        else:
+            prezzo_notte = prezzo_std
+            st.caption(f"Tariffa standard a notte: **{euro(prezzo_std)}**")
+
+        # --- Dati cliente e date DENTRO il form ---
         with st.form("form_prenotazione", clear_on_submit=True):
             c3, c4 = st.columns(2)
             check_in = c3.date_input(
-                "Check-in", value=giorno_default,
-                min_value=dt.date(2026, 1, 1), key="f_in",
+                "Data check-in", value=giorno_default,
+                min_value=dt.date(2026, 1, 1), format="DD/MM/YYYY", key="f_in",
             )
             check_out = c4.date_input(
-                "Check-out", value=giorno_default + dt.timedelta(days=1),
-                min_value=dt.date(2026, 1, 1), key="f_out",
+                "Data check-out", value=giorno_default + dt.timedelta(days=1),
+                min_value=dt.date(2026, 1, 1), format="DD/MM/YYYY", key="f_out",
             )
 
             tipo_cliente = st.radio(
@@ -464,14 +527,6 @@ def sezione_form_prenotazione(giorno_default):
             c5, c6 = st.columns(2)
             telefono = c5.text_input("Telefono", key="f_tel", placeholder="+39 ...")
             email = c6.text_input("Email", key="f_email", placeholder="nome@dominio.it")
-
-            # --- Deroga prezzo ---
-            applica_deroga = st.checkbox("Applica deroga prezzo (tariffa manuale)", key="f_deroga")
-            prezzo_deroga = st.number_input(
-                "Prezzo a notte derogato (€)",
-                min_value=0.0, step=5.0, value=float(prezzo_std),
-                disabled=not applica_deroga, key="f_prezzo_deroga",
-            )
 
             note = st.text_area("Note (facoltative)", key="f_note", height=70)
 
@@ -491,8 +546,6 @@ def sezione_form_prenotazione(giorno_default):
                 )
                 return
 
-            prezzo_notte = float(prezzo_deroga) if applica_deroga else prezzo_std
-
             nuova = {
                 "id": uuid.uuid4().hex[:8],
                 "hotel": hotel,
@@ -505,7 +558,7 @@ def sezione_form_prenotazione(giorno_default):
                 "intestatario": intestatario.strip(),
                 "telefono": telefono.strip(),
                 "email": email.strip(),
-                "prezzo_notte": prezzo_notte,
+                "prezzo_notte": float(prezzo_notte),
                 "prezzo_standard": prezzo_std,
                 "deroga": bool(applica_deroga),
                 "note": note.strip(),
@@ -516,7 +569,7 @@ def sezione_form_prenotazione(giorno_default):
             notti = (check_out - check_in).days
             st.success(
                 f"Prenotazione salvata: {intestatario.strip()} — N. {camera} "
-                f"({uso}), {notti} notti, totale {euro(notti * prezzo_notte)}."
+                f"({uso}), {notti} notti, totale {euro(notti * float(prezzo_notte))}."
             )
 
 
@@ -552,9 +605,113 @@ def sezione_griglie(giorno):
         )
 
 
+def _chiudi_modifica():
+    """Pulisce lo stato del form di modifica."""
+    for k in [
+        "edit_id", "_edit_seed", "e_hotel", "e_camera", "e_uso", "e_deroga",
+        "e_prezzo", "e_in", "e_out", "e_tcli", "e_int", "e_tel", "e_email", "e_note",
+    ]:
+        st.session_state.pop(k, None)
+
+
+def _form_modifica(pid):
+    """Form di modifica (prefilled) per la prenotazione con id = pid."""
+    p = next((x for x in st.session_state.prenotazioni if x["id"] == pid), None)
+    if p is None:
+        _chiudi_modifica()
+        return
+
+    # Pre-carica i valori una sola volta (alla prima apertura su questa prenotazione).
+    if st.session_state.get("_edit_seed") != pid:
+        st.session_state.e_hotel = p["hotel"]
+        st.session_state.e_camera = int(p["camera"])
+        st.session_state.e_uso = p["uso"]
+        st.session_state.e_deroga = bool(p["deroga"])
+        st.session_state.e_prezzo = float(p["prezzo_notte"])
+        st.session_state.e_in = a_data(p["check_in"])
+        st.session_state.e_out = a_data(p["check_out"])
+        st.session_state.e_tcli = p["tipo_cliente"] if p["tipo_cliente"] in ("Privato", "Ditta") else "Privato"
+        st.session_state.e_int = p["intestatario"]
+        st.session_state.e_tel = p["telefono"]
+        st.session_state.e_email = p["email"]
+        st.session_state.e_note = p.get("note", "")
+        st.session_state._edit_seed = pid
+
+    st.markdown("---")
+    st.markdown(f"**✏️ Modifica prenotazione di _{p['intestatario']}_**")
+
+    c1, c2 = st.columns(2)
+    hotel = c1.selectbox("Struttura", list(HOTELS.keys()), key="e_hotel")
+    rooms = HOTELS[hotel]["rooms"]
+    if st.session_state.e_camera not in rooms:          # hotel cambiato: riallinea
+        st.session_state.e_camera = list(rooms.keys())[0]
+    camera = c2.selectbox(
+        "Camera", list(rooms.keys()),
+        format_func=lambda n: f"N. {n} ({TIPO_LABEL[rooms[n]]})", key="e_camera",
+    )
+    tipo = rooms[camera]
+    usi = USI_PER_TIPO[tipo]
+    if st.session_state.e_uso not in usi:
+        st.session_state.e_uso = usi[0]
+    uso = st.selectbox("Tipo di uso", usi, key="e_uso")
+
+    prezzo_std = prezzo_standard(hotel, uso)
+    deroga = st.checkbox("Deroga prezzo standard (modifica manuale a 1 € per tocco)", key="e_deroga")
+    if deroga:
+        prezzo_notte = st.number_input(
+            "Prezzo a notte (€)", min_value=0.0, step=1.0, format="%.0f", key="e_prezzo",
+        )
+        st.caption(f"Standard {euro(prezzo_std)} → applicato **{euro(prezzo_notte)}**")
+    else:
+        prezzo_notte = prezzo_std
+        st.caption(f"Tariffa standard a notte: **{euro(prezzo_std)}**")
+
+    c3, c4 = st.columns(2)
+    check_in = c3.date_input("Data check-in", min_value=dt.date(2026, 1, 1), format="DD/MM/YYYY", key="e_in")
+    check_out = c4.date_input("Data check-out", min_value=dt.date(2026, 1, 1), format="DD/MM/YYYY", key="e_out")
+    tipo_cliente = st.radio("Tipologia cliente", ["Privato", "Ditta"], horizontal=True, key="e_tcli")
+    intestatario = st.text_input("Cognome e Nome  /  Ragione sociale", key="e_int")
+    c5, c6 = st.columns(2)
+    telefono = c5.text_input("Telefono", key="e_tel")
+    email = c6.text_input("Email", key="e_email")
+    note = st.text_area("Note (facoltative)", key="e_note", height=70)
+
+    b1, b2 = st.columns(2)
+    salva = b1.button("✅  Salva modifiche", use_container_width=True, key="e_save")
+    annulla = b2.button("✖️  Annulla", use_container_width=True, key="e_cancel")
+
+    if annulla:
+        _chiudi_modifica()
+        st.rerun()
+
+    if salva:
+        if not intestatario.strip():
+            st.error("Inserisci il nominativo o la ragione sociale.")
+            return
+        if check_out <= check_in:
+            st.error("Il check-out deve essere successivo al check-in.")
+            return
+        if c_e_sovrapposizione(hotel, camera, check_in, check_out, escludi_id=pid):
+            st.error(f"La camera N. {camera} di {hotel} è già prenotata in queste date.")
+            return
+
+        p.update({
+            "hotel": hotel, "camera": int(camera), "tipo_camera": tipo, "uso": uso,
+            "check_in": check_in.isoformat(), "check_out": check_out.isoformat(),
+            "tipo_cliente": tipo_cliente, "intestatario": intestatario.strip(),
+            "telefono": telefono.strip(), "email": email.strip(),
+            "prezzo_notte": float(prezzo_notte), "prezzo_standard": prezzo_std,
+            "deroga": bool(deroga), "note": note.strip(),
+        })
+        salva_prenotazioni()
+        _chiudi_modifica()
+        st.success("Modifiche salvate.")
+        st.rerun()
+
+
 def sezione_gestione():
-    """Elenco prenotazioni con possibilità di cancellazione."""
-    with st.expander("📋  Prenotazioni registrate / Elimina", expanded=False):
+    """Elenco prenotazioni con modifica ed eliminazione."""
+    with st.expander("📋  Prenotazioni registrate", expanded=False):
         prenotazioni = st.session_state.prenotazioni
         if not prenotazioni:
             st.info("Nessuna prenotazione registrata.")
@@ -564,35 +721,126 @@ def sezione_gestione():
         righe = []
         for p in sorted(prenotazioni, key=lambda x: a_data(x["check_in"])):
             notti = (a_data(p["check_out"]) - a_data(p["check_in"])).days
-            righe.append(
-                {
-                    "Struttura": p["hotel"],
-                    "Camera": f'N. {p["camera"]}',
-                    "Uso": p["uso"] + (" ⚠️" if p["deroga"] else ""),
-                    "Intestatario": p["intestatario"],
-                    "Check-in": a_data(p["check_in"]).strftime("%d/%m/%y"),
-                    "Check-out": a_data(p["check_out"]).strftime("%d/%m/%y"),
-                    "€/notte": euro(p["prezzo_notte"]),
-                    "Totale": euro(notti * float(p["prezzo_notte"])),
-                }
-            )
+            righe.append({
+                "Struttura": p["hotel"],
+                "Camera": f'N. {p["camera"]}',
+                "Uso": p["uso"] + (" (deroga)" if p["deroga"] else ""),
+                "Intestatario": p["intestatario"],
+                "Check-in": a_data(p["check_in"]).strftime("%d/%m/%y"),
+                "Check-out": a_data(p["check_out"]).strftime("%d/%m/%y"),
+                "€/notte": euro(p["prezzo_notte"]),
+                "Totale": euro(notti * float(p["prezzo_notte"])),
+            })
         st.dataframe(pd.DataFrame(righe), use_container_width=True, hide_index=True)
 
-        # Selezione ed eliminazione.
+        # Selezione prenotazione.
         opzioni = {
             f'{p["intestatario"]} · {p["hotel"]} N.{p["camera"]} · '
             f'{a_data(p["check_in"]).strftime("%d/%m/%y")}': p["id"]
             for p in prenotazioni
         }
-        scelta = st.selectbox("Seleziona una prenotazione da eliminare", list(opzioni.keys()))
-        if st.button("🗑️  Elimina prenotazione selezionata"):
-            target = opzioni[scelta]
+        scelta = st.selectbox("Seleziona una prenotazione", list(opzioni.keys()), key="sel_pren")
+        sel_id = opzioni[scelta]
+
+        # Tasti Modifica ed Elimina affiancati.
+        b1, b2 = st.columns(2)
+        if b1.button("✏️  Modifica prenotazione selezionata", use_container_width=True):
+            st.session_state.edit_id = sel_id
+            st.rerun()
+        if b2.button("🗑️  Elimina prenotazione selezionata", use_container_width=True):
             st.session_state.prenotazioni = [
-                p for p in st.session_state.prenotazioni if p["id"] != target
+                p for p in st.session_state.prenotazioni if p["id"] != sel_id
             ]
             salva_prenotazioni()
+            _chiudi_modifica()
             st.success("Prenotazione eliminata.")
             st.rerun()
+
+        # Form di modifica (compare quando si preme "Modifica").
+        if st.session_state.get("edit_id"):
+            _form_modifica(st.session_state.edit_id)
+
+
+def sezione_storico():
+    """Statistiche storiche (anno e mese) con confronti. Tutto dentro un expander."""
+    with st.expander("📊  Storico & statistiche incassi", expanded=False):
+        if not st.session_state.prenotazioni:
+            st.info("Ancora nessun dato storico: inserisci le prime prenotazioni.")
+            return
+
+        anni = anni_con_dati()
+
+        # --- Incasso per anno ---
+        st.markdown("**Incasso per anno**")
+        df_anni = pd.DataFrame(
+            {"Anno": [str(a) for a in anni], "Incasso (€)": [incasso_anno(a) for a in anni]}
+        ).set_index("Anno")
+        st.bar_chart(df_anni, height=180)
+
+        # --- Andamento mensile di un anno scelto ---
+        anno_sel = st.selectbox("Dettaglio mensile — anno", anni, index=len(anni) - 1)
+        df_mesi = pd.DataFrame(
+            {"Mese": [m[:3] for m in MESI_IT],
+             "Incasso (€)": [incasso_mese(anno_sel, m) for m in range(1, 13)]}
+        ).set_index("Mese")
+        st.bar_chart(df_mesi, height=180)
+
+        # --- Confronto fra due mesi (es. Maggio vs Aprile) ---
+        st.markdown("**Confronto fra due mesi**")
+        oggi = dt.date.today()
+        anno_def = oggi.year if oggi.year in anni else anni[-1]
+        mese_corr = oggi.month
+        mese_prec = 12 if mese_corr == 1 else mese_corr - 1
+
+        ca = st.columns(2)
+        mese_a = ca[0].selectbox("Mese A", list(range(1, 13)),
+                                 format_func=lambda m: MESI_IT[m - 1],
+                                 index=mese_prec - 1, key="cmp_ma")
+        anno_a = ca[1].selectbox("Anno A", anni, index=anni.index(anno_def), key="cmp_aa")
+        cb = st.columns(2)
+        mese_b = cb[0].selectbox("Mese B", list(range(1, 13)),
+                                 format_func=lambda m: MESI_IT[m - 1],
+                                 index=mese_corr - 1, key="cmp_mb")
+        anno_b = cb[1].selectbox("Anno B", anni, index=anni.index(anno_def), key="cmp_ab")
+
+        va = incasso_mese(anno_a, mese_a)
+        vb = incasso_mese(anno_b, mese_b)
+        m1, m2 = st.columns(2)
+        m1.metric(f"{MESI_IT[mese_a - 1]} {anno_a}", euro(va))
+        m2.metric(f"{MESI_IT[mese_b - 1]} {anno_b}", euro(vb), delta=f"{vb - va:+.0f} €")
+
+
+def sezione_backup():
+    """Esportazione/ripristino dei dati per non perdere mai lo storico."""
+    with st.expander("💾  Backup / ripristino dati", expanded=False):
+        df = pd.DataFrame(st.session_state.prenotazioni, columns=COLONNE)
+        csv = df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            "⬇️  Scarica backup CSV", csv,
+            file_name=f"prenotazioni_backup_{dt.date.today().isoformat()}.csv",
+            mime="text/csv", use_container_width=True,
+        )
+        st.caption(
+            "Consiglio: scarica il backup ogni tanto. Su Streamlit Cloud il file può "
+            "azzerarsi ai riavvii; con questo CSV ripristini tutto in un secondo."
+        )
+        up = st.file_uploader("Ripristina da un CSV di backup", type=["csv"])
+        if up is not None and st.button("♻️  Ripristina (sostituisce i dati attuali)",
+                                        use_container_width=True):
+            try:
+                dfu = pd.read_csv(up, dtype=str).fillna("")
+                recs = dfu.to_dict("records")
+                for r in recs:
+                    r["camera"] = int(float(r["camera"]))
+                    r["prezzo_notte"] = float(r["prezzo_notte"])
+                    r["prezzo_standard"] = float(r.get("prezzo_standard") or 0)
+                    r["deroga"] = str(r.get("deroga")).lower() in ("true", "1", "vero")
+                st.session_state.prenotazioni = recs
+                salva_prenotazioni()
+                st.success(f"Ripristinate {len(recs)} prenotazioni.")
+                st.rerun()
+            except Exception as e:
+                st.error(f"File non valido: {e}")
 
 
 # =============================================================================
@@ -620,16 +868,22 @@ def main():
     # --- Form di inserimento prenotazione ---
     sezione_form_prenotazione(giorno)
 
+    # --- Storico & statistiche (collassato, non appesantisce la pagina) ---
+    sezione_storico()
+
     # --- Griglie settimanali per le tre strutture ---
     sezione_griglie(giorno)
 
-    # --- Gestione/eliminazione prenotazioni ---
+    # --- Gestione: modifica / elimina prenotazioni ---
     sezione_gestione()
+
+    # --- Backup / ripristino dati ---
+    sezione_backup()
 
     st.caption(
         "Dati salvati in data/prenotazioni.csv. Su Streamlit Community Cloud il "
-        "filesystem è temporaneo: per conservare i dati a lungo termine collega "
-        "un database o un repo GitHub (vedi README)."
+        "filesystem è temporaneo: scarica il backup CSV o collega un repo GitHub / "
+        "database per conservare lo storico (vedi README)."
     )
 
 
