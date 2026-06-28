@@ -471,6 +471,9 @@ def sezione_form_prenotazione(giorno_default):
         c1, c2 = st.columns(2)
         hotel = c1.selectbox("Struttura", list(HOTELS.keys()), key="f_hotel")
         rooms = HOTELS[hotel]["rooms"]
+        # Se cambio struttura, riallineo la camera a una valida per evitare errori.
+        if st.session_state.get("f_camera") not in rooms:
+            st.session_state["f_camera"] = list(rooms.keys())[0]
         camera = c2.selectbox(
             "Camera",
             list(rooms.keys()),
@@ -478,7 +481,10 @@ def sezione_form_prenotazione(giorno_default):
             key="f_camera",
         )
         tipo = rooms[camera]
-        uso = st.selectbox("Tipo di uso", USI_PER_TIPO[tipo], key="f_uso")
+        usi = USI_PER_TIPO[tipo]
+        if st.session_state.get("f_uso") not in usi:
+            st.session_state["f_uso"] = usi[0]
+        uso = st.selectbox("Tipo di uso", usi, key="f_uso")
 
         prezzo_std = prezzo_standard(hotel, uso)
 
@@ -643,21 +649,24 @@ def _form_modifica(pid):
     c1, c2 = st.columns(2)
     hotel = c1.selectbox("Struttura", list(HOTELS.keys()), key="e_hotel")
     rooms = HOTELS[hotel]["rooms"]
-    if st.session_state.e_camera not in rooms:          # hotel cambiato: riallinea
-        st.session_state.e_camera = list(rooms.keys())[0]
+    # Se l'hotel è cambiato, riallineo la camera a una valida (accesso SICURO con .get).
+    if st.session_state.get("e_camera") not in rooms:
+        st.session_state["e_camera"] = list(rooms.keys())[0]
     camera = c2.selectbox(
         "Camera", list(rooms.keys()),
         format_func=lambda n: f"N. {n} ({TIPO_LABEL[rooms[n]]})", key="e_camera",
     )
     tipo = rooms[camera]
     usi = USI_PER_TIPO[tipo]
-    if st.session_state.e_uso not in usi:
-        st.session_state.e_uso = usi[0]
+    if st.session_state.get("e_uso") not in usi:
+        st.session_state["e_uso"] = usi[0]
     uso = st.selectbox("Tipo di uso", usi, key="e_uso")
 
     prezzo_std = prezzo_standard(hotel, uso)
     deroga = st.checkbox("Deroga prezzo standard (modifica manuale a 1 € per tocco)", key="e_deroga")
     if deroga:
+        if "e_prezzo" not in st.session_state:
+            st.session_state["e_prezzo"] = float(prezzo_std)
         prezzo_notte = st.number_input(
             "Prezzo a notte (€)", min_value=0.0, step=1.0, format="%.0f", key="e_prezzo",
         )
