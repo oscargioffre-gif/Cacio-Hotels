@@ -251,9 +251,10 @@ div[data-testid="stForm"] label, .stCheckbox label, .stRadio label{
 .stButton>button{ border-radius:10px; font-weight:600; }
 div[data-testid="stForm"]{ border:1px solid #ece5d8; border-radius:14px; background:#fff; }
 
-/* --- Tasto HOME fisso, sempre visibile (in basso a destra) --- */
+/* --- Tasto HOME fisso, sempre visibile (in basso a SINISTRA, per non finire
+       sotto il badge "Gestisci l'app" di Streamlit Cloud che sta a destra) --- */
 .home-fab{
-  position:fixed; right:18px; bottom:18px; z-index:99999;
+  position:fixed; left:18px; bottom:18px; z-index:99999;
   background:linear-gradient(180deg,#1c485f 0%,#0F2A3A 100%); color:#fff !important;
   font-weight:700; font-size:14px; text-decoration:none !important;
   padding:12px 18px; border-radius:30px; line-height:1;
@@ -264,7 +265,7 @@ div[data-testid="stForm"]{ border:1px solid #ece5d8; border-radius:14px; backgro
 .home-fab:hover{ filter:brightness(1.12); }
 .home-fab:active{ transform:translateY(2px); box-shadow:0 2px 8px rgba(15,42,58,.38); }
 @media (max-width:560px){
-  .home-fab{ right:14px; bottom:14px; padding:11px 15px; font-size:13px; }
+  .home-fab{ left:14px; bottom:14px; padding:11px 15px; font-size:13px; }
 }
 
 /* --- Desktop / laptop: più respiro e font leggermente maggiori --- */
