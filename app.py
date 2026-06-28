@@ -948,6 +948,22 @@ def gestisci_click_celle():
     st.query_params.clear()
 
 
+def _giorno_clamp(d):
+    return max(dt.date(2026, 1, 1), d)
+
+
+def _shift_settimana(delta):
+    """Callback frecce: sposta di una settimana (eseguita prima del widget)."""
+    st.session_state["giorno_sel"] = _giorno_clamp(
+        st.session_state["giorno_sel"] + dt.timedelta(days=delta)
+    )
+
+
+def _vai_oggi():
+    """Callback tasto Oggi."""
+    st.session_state["giorno_sel"] = _giorno_clamp(dt.date.today())
+
+
 def selettore_giorno():
     """Selettore giorno/settimana semplice e intuitivo: calendario + frecce
     settimana precedente/successiva + tasto Oggi. Restituisce il giorno scelto."""
@@ -956,33 +972,27 @@ def selettore_giorno():
     if "giorno_sel" not in st.session_state:
         st.session_state["giorno_sel"] = default
 
-    def _clamp(d):
-        return max(dt.date(2026, 1, 1), d)
-
     st.markdown("##### 📅 Settimana da visualizzare")
     cprev, cpick, cnext = st.columns([1, 3, 1])
 
-    # Frecce: spostano di una settimana (gestite PRIMA di creare il calendario).
-    if cprev.button("◀", use_container_width=True, help="Settimana precedente"):
-        st.session_state["giorno_sel"] = _clamp(st.session_state["giorno_sel"] - dt.timedelta(days=7))
-        st.rerun()
-    if cnext.button("▶", use_container_width=True, help="Settimana successiva"):
-        st.session_state["giorno_sel"] = _clamp(st.session_state["giorno_sel"] + dt.timedelta(days=7))
-        st.rerun()
+    # I tasti usano callback on_click: modificano lo stato PRIMA che il calendario
+    # venga ricreato, evitando l'errore "cannot be modified after instantiated".
+    cprev.button("◀", use_container_width=True, help="Settimana precedente",
+                 on_click=_shift_settimana, args=(-7,))
+    cnext.button("▶", use_container_width=True, help="Settimana successiva",
+                 on_click=_shift_settimana, args=(7,))
 
     giorno = cpick.date_input(
         "Giorno di riferimento", min_value=dt.date(2026, 1, 1),
         format="DD/MM/YYYY", key="giorno_sel", label_visibility="collapsed",
     )
 
-    # Tasto "Oggi" (solo se utile, cioè se non siamo già sulla settimana odierna).
+    # Tasto "Oggi": mostrato solo se non siamo già sul giorno odierno.
     if oggi >= dt.date(2026, 1, 1) and giorno != oggi:
-        if st.button("📍  Oggi", use_container_width=True):
-            st.session_state["giorno_sel"] = oggi
-            st.rerun()
+        st.button("📍  Oggi", use_container_width=True, on_click=_vai_oggi)
 
-    lun, dom = giorni_settimana(giorno)[0], giorni_settimana(giorno)[-1]
-    st.caption(f"Settimana: **{lun.strftime('%d/%m/%Y')} – {dom.strftime('%d/%m/%Y')}**")
+    sett = giorni_settimana(giorno)
+    st.caption(f"Settimana: **{sett[0].strftime('%d/%m/%Y')} – {sett[-1].strftime('%d/%m/%Y')}**")
     return giorno
 
 
