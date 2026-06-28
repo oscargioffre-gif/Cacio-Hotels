@@ -673,7 +673,7 @@ def sezione_griglie(giorno):
 def _chiudi_modifica():
     """Pulisce lo stato del form di modifica."""
     for k in [
-        "edit_id", "_edit_seed", "e_hotel", "e_camera", "e_uso", "e_deroga",
+        "edit_id", "_edit_seed", "e_prev_combo", "e_hotel", "e_camera", "e_uso", "e_deroga",
         "e_prezzo", "e_in", "e_out", "e_tcli", "e_int", "e_tel", "e_email", "e_note",
     ]:
         st.session_state.pop(k, None)
@@ -700,6 +700,7 @@ def _form_modifica(pid):
         st.session_state.e_tel = p["telefono"]
         st.session_state.e_email = p["email"]
         st.session_state.e_note = p.get("note", "")
+        st.session_state.e_prev_combo = (p["hotel"], int(p["camera"]), p["uso"])
         st.session_state._edit_seed = pid
 
     st.caption(f"Stai modificando la prenotazione di **{p['intestatario']}**.")
@@ -721,10 +722,15 @@ def _form_modifica(pid):
     uso = st.selectbox("Tipo di uso", usi, key="e_uso")
 
     prezzo_std = prezzo_standard(hotel, uso)
-    # Prezzo SEMPRE visibile e PRECOMPILATO col valore attuale della prenotazione,
-    # modificabile manualmente a 1 € per tocco (in più o in meno).
+    # Prezzo precompilato col valore attuale della prenotazione; quando cambi
+    # struttura/camera/uso si AGGIORNA automaticamente alla nuova tariffa standard
+    # (poi resta modificabile manualmente a 1 € per tocco).
+    combo = (hotel, int(camera), uso)
     if "e_prezzo" not in st.session_state:
         st.session_state["e_prezzo"] = float(p["prezzo_notte"])
+    elif st.session_state.get("e_prev_combo") != combo:
+        st.session_state["e_prezzo"] = float(prezzo_std)
+    st.session_state["e_prev_combo"] = combo
     prezzo_notte = st.number_input(
         "Prezzo a notte (€) — modificabile a 1 € per tocco",
         min_value=0.0, step=1.0, format="%.0f", key="e_prezzo",
