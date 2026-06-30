@@ -136,15 +136,17 @@ def inietta_css():
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
 
 :root{
-  --marine:#0F2A3A; --marine-2:#163b50; --ottone:#C7A24A;
-  --avorio:#FBF8F3; --inchiostro:#1B2B34;
-  --libera:#2E8B6B; --occupata:#C8553D;
+  /* Tema AS Roma: rosso + oro su sfondo giallo caldo */
+  --marine:#8E1F2F; --marine-2:#6E1422; --ottone:#F4C13C;
+  --avorio:#FBF1D4; --inchiostro:#2a1d12;
+  --libera:#2E8B6B; --occupata:#8E1F2F;
 }
 
 /* Sfondo, font e COLORE testo imposti sul container: garantiscono leggibilità
    anche se l'app non carica il tema (niente più testo bianco su bianco). */
 [data-testid="stAppViewContainer"]{
-  background:var(--avorio); color:var(--inchiostro);
+  background:linear-gradient(160deg,#FBF1D4 0%,#FCF6E4 45%,#FBE3DA 100%);
+  color:var(--inchiostro);
   font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
 }
 /* IMPORTANTE: non sovrascrivere il font delle icone di Streamlit, altrimenti
@@ -170,9 +172,9 @@ div[data-testid="stForm"] label, .stCheckbox label, .stRadio label{
 
 /* --- Testata --- */
 .app-header{
-  background:linear-gradient(160deg,#0b2030 0%,var(--marine) 45%,var(--marine-2) 100%);
+  background:linear-gradient(160deg,#a3293a 0%,var(--marine) 45%,var(--marine-2) 100%);
   border-radius:20px; padding:34px 24px 28px; margin:0 0 22px; text-align:center;
-  box-shadow:0 12px 32px rgba(15,42,58,.24); border:1px solid rgba(199,162,74,.4);
+  box-shadow:0 12px 32px rgba(110,20,34,.28); border:1.5px solid rgba(244,193,60,.55);
 }
 .app-header h1{
   font-family:'Fraunces',serif; color:#fff; font-size:44px; font-weight:700;
@@ -183,7 +185,7 @@ div[data-testid="stForm"] label, .stCheckbox label, .stRadio label{
   width:66px; height:3px; background:var(--ottone); border-radius:3px; margin:14px auto 12px;
 }
 .app-header .pedice{
-  color:#e8d9b0; font-size:13px; font-weight:600; text-transform:uppercase;
+  color:#f3d79b; font-size:13px; font-weight:600; text-transform:uppercase;
   letter-spacing:2.6px; line-height:1.5; margin:0;
 }
 @media (max-width:560px){
@@ -248,7 +250,7 @@ div[data-testid="stForm"] label, .stCheckbox label, .stRadio label{
   transition:transform .07s ease, box-shadow .07s ease, filter .12s ease;
 }
 .cell.free{ background:linear-gradient(180deg,#37a37c 0%,#2E8B6B 100%); font-size:11px; }
-.cell.occ{ background:linear-gradient(180deg,#d56550 0%,#C8553D 100%); }
+.cell.occ{ background:linear-gradient(180deg,#a3293a 0%,#8E1F2F 100%); }
 .cell:hover{ filter:brightness(1.07); }
 .cell:active{                                   /* premuto: si abbassa */
   transform:translateY(3px);
@@ -277,10 +279,10 @@ div[data-testid="stForm"]{ border:1px solid #ece5d8; border-radius:14px; backgro
        sotto il badge "Gestisci l'app" di Streamlit Cloud che sta a destra) --- */
 .home-fab{
   position:fixed; left:18px; bottom:18px; z-index:99999;
-  background:linear-gradient(180deg,#1c485f 0%,#0F2A3A 100%); color:#fff !important;
+  background:linear-gradient(180deg,#a3293a 0%,#6E1422 100%); color:#fff !important;
   font-weight:700; font-size:14px; text-decoration:none !important;
   padding:12px 18px; border-radius:30px; line-height:1;
-  box-shadow:0 6px 18px rgba(15,42,58,.38); border:1.5px solid var(--ottone);
+  box-shadow:0 6px 18px rgba(110,20,34,.4); border:1.5px solid var(--ottone);
   display:inline-flex; align-items:center; gap:7px; -webkit-tap-highlight-color:transparent;
   transition:transform .07s ease, box-shadow .07s ease, filter .12s ease;
 }

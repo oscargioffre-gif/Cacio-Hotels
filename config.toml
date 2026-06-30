@@ -1,10 +1,10 @@
-# Tema in tinta con l'identità "ospitalità italiana" (marine + ottone + avorio)
+# Tema giallorosso (AS Roma): rosso + oro su giallo caldo
 [theme]
 base = "light"
-primaryColor = "#C7A24A"
-backgroundColor = "#FBF8F3"
+primaryColor = "#8E1F2F"
+backgroundColor = "#FBF1D4"
 secondaryBackgroundColor = "#FFFFFF"
-textColor = "#1B2B34"
+textColor = "#2a1d12"
 font = "sans serif"
 
 [server]
