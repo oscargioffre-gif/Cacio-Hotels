@@ -102,6 +102,9 @@ TIPO_LABEL = {"doppia": "Doppia", "tripla": "Tripla", "tripla_quad": "Tripla/Qua
 DATA_DIR = "data"
 DATA_FILE = os.path.join(DATA_DIR, "prenotazioni.csv")
 
+# Password di accesso all'app (semplice gate, non sicurezza forte: vedi nota).
+PASSWORD_APP = "giovanni"
+
 # Colonne del CSV / dei record prenotazione.
 COLONNE = [
     "id", "hotel", "camera", "tipo_camera", "uso",
@@ -1053,12 +1056,47 @@ def selettore_giorno():
     return giorno
 
 
+def autenticazione():
+    """Mostra la schermata di login se l'utente non è autenticato.
+    Ritorna True se autenticato, False altrimenti."""
+    if st.session_state.get("autenticato", False):
+        return True
+
+    # Prima dell'accesso si vede SOLO questa schermata di login.
+    sezione_testata()
+    st.markdown("#### 🔒 Accesso riservato")
+    with st.form("login_form"):
+        pwd = st.text_input(
+            "Password", type="password", placeholder="Inserisci la password"
+        )
+        accedi = st.form_submit_button("Accedi", use_container_width=True)
+    if accedi:
+        if pwd == PASSWORD_APP:
+            st.session_state.autenticato = True
+            st.rerun()
+        else:
+            st.error("Password errata. Riprova.")
+    return False
+
+
 # =============================================================================
-# 10. MAIN
+# 11. MAIN
 # =============================================================================
 def main():
     inietta_css()
     init_stato()
+
+    # --- LOGIN: tutto il resto è visibile solo dopo l'accesso ---
+    if not autenticazione():
+        return
+
+    # --- Sidebar: tasto Logout ---
+    with st.sidebar:
+        st.markdown("**Caciorgna Hotels**")
+        if st.button("🚪  Logout", use_container_width=True):
+            st.session_state.autenticato = False
+            st.rerun()
+
     gestisci_click_celle()      # interpreta i click sulle celle e il tasto HOME
     # Tasto HOME fisso, sempre visibile: torna all'inizio e ricarica i dati.
     st.markdown(
