@@ -266,6 +266,11 @@ div[data-testid="stForm"] label, .stCheckbox label, .stRadio label{
 
 /* Bottoni e form in tinta */
 .stButton>button{ border-radius:10px; font-weight:600; }
+/* Larghezza piena dei pulsanti via CSS (al posto del deprecato use_container_width) */
+.stButton>button, .stDownloadButton>button,
+[data-testid="stFormSubmitButton"]>button, [data-testid="stBaseButton-secondaryFormSubmit"]{
+  width:100%;
+}
 div[data-testid="stForm"]{ border:1px solid #ece5d8; border-radius:14px; background:#fff; }
 
 /* --- Tasto HOME fisso, sempre visibile (in basso a SINISTRA, per non finire
@@ -609,7 +614,7 @@ def sezione_form_prenotazione(giorno_default):
 
             note = st.text_area("Note (facoltative)", key="f_note", height=70)
 
-            inviato = st.form_submit_button("💾  Salva prenotazione", use_container_width=True)
+            inviato = st.form_submit_button("💾  Salva prenotazione")
 
         if inviato:
             # --- Validazioni ---
@@ -769,8 +774,8 @@ def _form_modifica(pid):
     note = st.text_area("Note (facoltative)", key="e_note", height=70)
 
     b1, b2 = st.columns(2)
-    salva = b1.button("✅  Salva modifiche", use_container_width=True, key="e_save")
-    annulla = b2.button("✖️  Annulla", use_container_width=True, key="e_cancel")
+    salva = b1.button("✅  Salva modifiche", key="e_save")
+    annulla = b2.button("✖️  Annulla", key="e_cancel")
 
     if annulla:
         _chiudi_modifica()
@@ -833,7 +838,7 @@ def sezione_gestione():
                 "€/notte": euro(p["prezzo_notte"]),
                 "Totale": euro(notti * float(p["prezzo_notte"])),
             })
-        st.dataframe(pd.DataFrame(righe), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(righe), hide_index=True)
 
         # Selezione prenotazione.
         opzioni = {
@@ -846,10 +851,10 @@ def sezione_gestione():
 
         # Tasti Modifica ed Elimina affiancati.
         b1, b2 = st.columns(2)
-        if b1.button("✏️  Modifica prenotazione selezionata", use_container_width=True):
+        if b1.button("✏️  Modifica prenotazione selezionata"):
             st.session_state.edit_id = sel_id
             st.rerun()
-        if b2.button("🗑️  Elimina prenotazione selezionata", use_container_width=True):
+        if b2.button("🗑️  Elimina prenotazione selezionata"):
             st.session_state.prenotazioni = [
                 p for p in st.session_state.prenotazioni if p["id"] != sel_id
             ]
@@ -918,15 +923,14 @@ def sezione_backup():
         st.download_button(
             "⬇️  Scarica backup CSV", csv,
             file_name=f"prenotazioni_backup_{dt.date.today().isoformat()}.csv",
-            mime="text/csv", use_container_width=True,
+            mime="text/csv",
         )
         st.caption(
             "Consiglio: scarica il backup ogni tanto. Su Streamlit Cloud il file può "
             "azzerarsi ai riavvii; con questo CSV ripristini tutto in un secondo."
         )
         up = st.file_uploader("Ripristina da un CSV di backup", type=["csv"])
-        if up is not None and st.button("♻️  Ripristina (sostituisce i dati attuali)",
-                                        use_container_width=True):
+        if up is not None and st.button("♻️  Ripristina (sostituisce i dati attuali)"):
             try:
                 dfu = pd.read_csv(up, dtype=str).fillna("")
                 recs = dfu.to_dict("records")
@@ -1037,9 +1041,9 @@ def selettore_giorno():
 
     # I tasti usano callback on_click: modificano lo stato PRIMA che il calendario
     # venga ricreato, evitando l'errore "cannot be modified after instantiated".
-    cprev.button("◀", use_container_width=True, help="Settimana precedente",
+    cprev.button("◀", help="Settimana precedente",
                  on_click=_shift_settimana, args=(-7,))
-    cnext.button("▶", use_container_width=True, help="Settimana successiva",
+    cnext.button("▶", help="Settimana successiva",
                  on_click=_shift_settimana, args=(7,))
 
     giorno = cpick.date_input(
@@ -1049,7 +1053,7 @@ def selettore_giorno():
 
     # Tasto "Oggi": mostrato solo se non siamo già sul giorno odierno.
     if oggi >= dt.date(2026, 1, 1) and giorno != oggi:
-        st.button("📍  Oggi", use_container_width=True, on_click=_vai_oggi)
+        st.button("📍  Oggi", on_click=_vai_oggi)
 
     sett = giorni_settimana(giorno)
     st.caption(f"Settimana: **{sett[0].strftime('%d/%m/%Y')} – {sett[-1].strftime('%d/%m/%Y')}**")
@@ -1069,7 +1073,7 @@ def autenticazione():
         pwd = st.text_input(
             "Password", type="password", placeholder="Inserisci la password"
         )
-        accedi = st.form_submit_button("Accedi", use_container_width=True)
+        accedi = st.form_submit_button("Accedi")
     if accedi:
         if pwd == PASSWORD_APP:
             st.session_state.autenticato = True
@@ -1093,7 +1097,7 @@ def main():
     # --- Sidebar: tasto Logout ---
     with st.sidebar:
         st.markdown("**Caciorgna Hotels**")
-        if st.button("🚪  Logout", use_container_width=True):
+        if st.button("🚪  Logout"):
             st.session_state.autenticato = False
             st.rerun()
 
