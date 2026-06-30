@@ -18,6 +18,22 @@ scorrevole** ottimizzata per smartphone (in particolare iPhone) e desktop.
 - **Backup / ripristino** CSV per non perdere mai lo storico
 - Salvataggio persistente su `data/prenotazioni.csv`
 
+## 🔐 Password di accesso (Secrets)
+La password **non è scritta nel codice**: viene letta dai *Secrets* di Streamlit, così il
+repository può restare pubblico in sicurezza.
+
+**Su Streamlit Community Cloud:** apri l'app → **Manage app / Settings** → **Secrets** e incolla:
+```toml
+password = "giovanni"
+```
+Salva e riavvia l'app.
+
+**In locale:** copia `.streamlit/secrets.toml.example` in `.streamlit/secrets.toml` e metti la tua
+password. Il file `.streamlit/secrets.toml` è già in `.gitignore` (non va su GitHub). In alternativa
+puoi usare la variabile d'ambiente `APP_PASSWORD`.
+
+Logout dalla **sidebar**.
+
 ## Avvio locale
 ```bash
 pip install -r requirements.txt

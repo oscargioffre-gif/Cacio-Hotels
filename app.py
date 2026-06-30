@@ -102,8 +102,8 @@ TIPO_LABEL = {"doppia": "Doppia", "tripla": "Tripla", "tripla_quad": "Tripla/Qua
 DATA_DIR = "data"
 DATA_FILE = os.path.join(DATA_DIR, "prenotazioni.csv")
 
-# Password di accesso all'app (semplice gate, non sicurezza forte: vedi nota).
-PASSWORD_APP = "giovanni"
+# Password di accesso: NON è nel codice. Va impostata nei Secrets di Streamlit
+# (chiave "password") oppure nella variabile d'ambiente APP_PASSWORD in locale.
 
 # Colonne del CSV / dei record prenotazione.
 COLONNE = [
@@ -1060,6 +1060,19 @@ def selettore_giorno():
     return giorno
 
 
+def password_configurata():
+    """Restituisce la password corretta letta dai Secrets di Streamlit (chiave
+    "password") o dalla variabile d'ambiente APP_PASSWORD. None se non impostata.
+    In questo modo la password NON è scritta nel codice."""
+    try:
+        pwd = st.secrets.get("password")
+        if pwd:
+            return str(pwd)
+    except Exception:
+        pass
+    return os.environ.get("APP_PASSWORD")
+
+
 def autenticazione():
     """Mostra la schermata di login se l'utente non è autenticato.
     Ritorna True se autenticato, False altrimenti."""
@@ -1069,13 +1082,19 @@ def autenticazione():
     # Prima dell'accesso si vede SOLO questa schermata di login.
     sezione_testata()
     st.markdown("#### 🔒 Accesso riservato")
+    pwd_corretta = password_configurata()
     with st.form("login_form"):
         pwd = st.text_input(
             "Password", type="password", placeholder="Inserisci la password"
         )
         accedi = st.form_submit_button("Accedi")
     if accedi:
-        if pwd == PASSWORD_APP:
+        if pwd_corretta is None:
+            st.error(
+                "Password non configurata. Imposta il Secret 'password' su "
+                "Streamlit Cloud (o la variabile d'ambiente APP_PASSWORD in locale)."
+            )
+        elif pwd == pwd_corretta:
             st.session_state.autenticato = True
             st.rerun()
         else:
