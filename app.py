@@ -12,6 +12,7 @@ Deploy:        compatibile con Streamlit Community Cloud (vedi note sul CSV).
 
 import os
 import uuid
+import hashlib
 import urllib.parse
 import datetime as dt
 from calendar import monthrange
@@ -451,6 +452,7 @@ def griglia_hotel_html(hotel, settimana):
 
     # Una riga per camera.
     qh = urllib.parse.quote(hotel)
+    aq = _auth_qs()  # token che mantiene l'accesso attraverso i ricaricamenti
     for camera, tipo in rooms.items():
         parti.append(f'<div class="grow"><div class="rc">N. {camera}<small>{TIPO_LABEL[tipo]}</small></div>')
         for d in settimana:
@@ -458,7 +460,7 @@ def griglia_hotel_html(hotel, settimana):
             if p:
                 # Cella ROSSA -> link che apre la MODIFICA di quella prenotazione.
                 nome = abbrevia(p["intestatario"])
-                href = f"?act=edit&id={p['id']}"
+                href = f"?act=edit&id={p['id']}{aq}"
                 parti.append(
                     f'<div class="dc"><a class="cell occ" target="_self" href="{href}" '
                     f'title="{p["intestatario"]} — {p["uso"]} (tocca per modificare)">'
@@ -466,7 +468,7 @@ def griglia_hotel_html(hotel, settimana):
                 )
             else:
                 # Cella VERDE -> link che apre l'INSERIMENTO per camera/giorno.
-                href = f"?act=add&h={qh}&r={camera}&d={d.isoformat()}"
+                href = f"?act=add&h={qh}&r={camera}&d={d.isoformat()}{aq}"
                 parti.append(
                     f'<div class="dc"><a class="cell free" target="_self" href="{href}" '
                     f'title="Tocca per prenotare la N. {camera} il {d.strftime("%d/%m")}">libera</a></div>'
@@ -1010,8 +1012,12 @@ def gestisci_click_celle():
             st.session_state.pop("open_add", None)
             st.session_state.edit_id = bid
 
-    # Pulisco l'URL così l'azione non si ripete ad ogni rerun successivo.
+    # Pulisco l'URL dai parametri d'azione, ma CONSERVO il token di accesso
+    # (auth) così non viene richiesta di nuovo la password.
+    auth = qp.get("auth")
     st.query_params.clear()
+    if auth:
+        st.query_params["auth"] = auth
 
 
 def _giorno_clamp(d):
@@ -1075,16 +1081,47 @@ def password_configurata():
     return os.environ.get("APP_PASSWORD")
 
 
+def _token(pwd):
+    """Token (non reversibile) derivato dalla password: viene messo nell'URL per
+    mantenere l'accesso attraverso i ricaricamenti di pagina e i riavvii dei
+    server di Streamlit, senza esporre la password."""
+    return hashlib.sha256(("caciorgna::" + str(pwd)).encode()).hexdigest()[:20]
+
+
+def _auth_qs():
+    """Frammento '&auth=TOKEN' da accodare ai link, per non perdere l'accesso
+    quando il click ricarica la pagina. Vuoto se non autenticato."""
+    tok = st.session_state.get("auth_token")
+    return f"&auth={tok}" if tok else ""
+
+
 def autenticazione():
     """Mostra la schermata di login se l'utente non è autenticato.
-    Ritorna True se autenticato, False altrimenti."""
+    Ritorna True se autenticato, False altrimenti.
+
+    L'accesso viene ricordato tramite un token nell'URL: così la password è
+    chiesta solo all'inizio (non ad ogni prenotazione) e l'app non si blocca
+    quando Streamlit ricarica/riavvia. Viene richiesta di nuovo solo quando si
+    esce davvero dall'app (URL senza token) o dopo il Logout."""
+    pwd_corretta = password_configurata()
+
+    # Già autenticato in questa sessione.
     if st.session_state.get("autenticato", False):
+        if pwd_corretta is not None and not st.session_state.get("auth_token"):
+            st.session_state.auth_token = _token(pwd_corretta)
         return True
+
+    # Auto-login dal token presente nell'URL (sopravvive a reload e riavvii).
+    if pwd_corretta is not None:
+        tok_url = st.query_params.get("auth")
+        if tok_url and tok_url == _token(pwd_corretta):
+            st.session_state.autenticato = True
+            st.session_state.auth_token = tok_url
+            return True
 
     # Prima dell'accesso si vede SOLO questa schermata di login.
     sezione_testata()
     st.markdown("#### 🔒 Accesso riservato")
-    pwd_corretta = password_configurata()
     with st.form("login_form"):
         pwd = st.text_input(
             "Password", type="password", placeholder="Inserisci la password"
@@ -1098,6 +1135,8 @@ def autenticazione():
             )
         elif pwd == pwd_corretta:
             st.session_state.autenticato = True
+            st.session_state.auth_token = _token(pwd_corretta)
+            st.query_params["auth"] = st.session_state.auth_token
             st.rerun()
         else:
             st.error("Password errata. Riprova.")
@@ -1115,17 +1154,19 @@ def main():
     if not autenticazione():
         return
 
-    # --- Sidebar: tasto Logout ---
+    # --- Sidebar: tasto Logout (chiede di nuovo la password) ---
     with st.sidebar:
         st.markdown("**Caciorgna Hotels**")
         if st.button("🚪  Logout"):
             st.session_state.autenticato = False
+            st.session_state.pop("auth_token", None)
+            st.query_params.clear()
             st.rerun()
 
     gestisci_click_celle()      # interpreta i click sulle celle e il tasto HOME
     # Tasto HOME fisso, sempre visibile: torna all'inizio e ricarica i dati.
     st.markdown(
-        '<a class="home-fab" target="_self" href="?act=home" '
+        f'<a class="home-fab" target="_self" href="?act=home{_auth_qs()}" '
         'title="Torna alla pagina iniziale e aggiorna">🏠 Home</a>',
         unsafe_allow_html=True,
     )
